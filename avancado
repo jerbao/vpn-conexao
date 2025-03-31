@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Verifica se a VPN está conectada antes de tudo
+STATUS_OUTPUT=$(nordvpn status)
+
+if echo "$STATUS_OUTPUT" | grep -q "Status: Connected"; then
+    echo "VPN está Conectada"
+
+    # Lista de IPs para teste de conectividade
+    IPS=(1.1.1.1 8.8.8.8 9.9.9.9)
+    FALHAS=0
+
+    # Verifica conexão com cada IP
+    for IP in "${IPS[@]}"; do
+        MEDIA_PING=$(ping -c 3 -q "$IP" | awk -F '/' '/rtt/ {print $5}')
+        if [ -z "$MEDIA_PING" ]; then
+            echo "Falha ao pingar $IP"
+            ((FALHAS++))
+        else
+            echo "Ping para $IP: média = ${MEDIA_PING} ms"
+        fi
+    done
+
+    TOTAL_IPS=${#IPS[@]}
+
+    # Se mais da metade dos testes falharem (ou pelo menos 1 se só tiver 1 ou 2 IPs), reinicia a VPN
+    if [ $FALHAS -ge $(( (TOTAL_IPS + 1) / 2 )) ]; then
+        echo "Problemas de conectividade detectados. Reiniciando VPN..."
+        nordvpn disconnect
+        sleep 3
+        nordvpn connect
+    else
+        echo "Conectividade estável. Nenhuma ação necessária."
+    fi
+else
+    echo "VPN está Desconectada"
+    echo "Conectando à VPN..."
+    nordvpn connect
+fi
