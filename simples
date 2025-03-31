@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Executa o comando e captura a saída
+STATUS_OUTPUT=$(nordvpn status)
+
+# Verifica se a VPN está conectada
+if echo "$STATUS_OUTPUT" | grep -q "Status: Connected"; then
+    echo "VPN está Conectada"
+else
+    echo "VPN está Desconectada"
+    echo "Conectando à VPN..."
+    nordvpn connect
+fi
